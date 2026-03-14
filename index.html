@@ -332,7 +332,7 @@
 <div id="header">
   <div class="logo">
     <div class="logo-brick"></div>
-    Brick<span>ed</span>
+    Bricked</span>
   </div>
   <div class="header-sep"></div>
   <button class="header-btn" id="undo-btn" onclick="undo()" title="Rückgängig (Strg+Z)" disabled>
@@ -429,7 +429,7 @@
 </div>
 
 <div id="toast"></div>
-<input type="file" id="file-input" accept=".brickforge,.json" style="display:none" onchange="loadProjectFile(event)">
+<input type="file" id="file-input" accept=".bricked,.json" style="display:none" onchange="loadProjectFile(event)">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -1014,7 +1014,7 @@ function saveProject() {
   const blob = new Blob([payload], {type:'application/json'});
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
-  a.href = url; a.download = 'brickforge_model.brickforge';
+  a.href = url; a.download = 'bricked_model.bricked';
   a.click(); URL.revokeObjectURL(url);
   showToast('Projekt gespeichert!');
 }
@@ -1127,7 +1127,7 @@ function exportSTL() {
 
   const buf  = new ArrayBuffer(84 + 50*tris.length);
   const view = new DataView(buf);
-  const hdr  = 'BrickForge v2 — LEGO-dimensioned STL';
+  const hdr  = 'Bricked v2 — LEGO-dimensioned STL';
   for (let i=0;i<80;i++) view.setUint8(i, i<hdr.length ? hdr.charCodeAt(i) : 0);
   view.setUint32(80, tris.length, true);
   tris.forEach((t,i) => {
@@ -1143,7 +1143,7 @@ function exportSTL() {
   const blob = new Blob([buf], {type:'application/octet-stream'});
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
-  a.href = url; a.download = 'brickforge_model.stl';
+  a.href = url; a.download = 'bricked_model.stl';
   a.click(); URL.revokeObjectURL(url);
   showToast(`STL exportiert — ${entries.length} Steine · ${tris.length.toLocaleString()} Dreiecke`);
 }
