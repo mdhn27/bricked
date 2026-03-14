@@ -16,7 +16,7 @@
 - **Mehrere Ebenen** — bis zu 30 Lagen (Taste `[` / `]`)
 - **LEGO-Standard-Maße** — 1 Stud = 8 mm, Stein = 9,6 mm hoch, Platte = 3,2 mm
 - **STL-Export** — direkt druckbares Binary-STL mit korrekten Noppen
-- **Speichern / Laden** — `.brickforge` JSON-Projektdatei
+- **Speichern / Laden** — `.bricked` JSON-Projektdatei
 - **20 Farben**
 - **Kamera** — Rechtsklick drehen, Scroll zoomen
 
