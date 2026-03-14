@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bricked — Virtueller LEGO-Editor</title>
+<title>BrickForge — Virtueller LEGO-Editor</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap');
 
@@ -573,7 +573,9 @@ function animate() {
 //  Grid helpers
 // ════════════════════════════════════════════════════════════
 function layerY(layer) {
-  return (layer - 1) * S.BRICK;
+  // Each layer sits S.STUD_H lower so studs from below "disappear" into the bottom
+  // Layer 1 starts at 0, layer 2 at BRICK - STUD_H, etc.
+  return (layer - 1) * (S.BRICK - S.STUD_H);
 }
 
 function buildGridForLayer(layer) {
@@ -674,10 +676,10 @@ function createBrickGroup(sx, sz, hp, color, opacity=1) {
     side: THREE.FrontSide
   });
 
-  // Main body
+  // Main body — full width, no gap (gap was causing separate pieces in STL)
   const bodyH = H - S.STUD_H;
   const body  = new THREE.Mesh(
-    new THREE.BoxGeometry(W - 0.4, bodyH, D - 0.4),
+    new THREE.BoxGeometry(W, bodyH, D),
     mat(0.45)
   );
   body.position.set(W/2, bodyH/2, D/2);
@@ -692,7 +694,7 @@ function createBrickGroup(sx, sz, hp, color, opacity=1) {
     transparent: opacity<1, opacity
   });
   const top = new THREE.Mesh(
-    new THREE.PlaneGeometry(W - 0.4, D - 0.4),
+    new THREE.PlaneGeometry(W, D),
     topMat
   );
   top.rotation.x = -Math.PI/2;
@@ -1109,11 +1111,11 @@ function exportSTL() {
 
   entries.forEach(d => {
     const {gx, gy, gz, sx, sz, hp} = d;
-    const ox = gx*S.STUD + 0.2;
-    const oz = gz*S.STUD + 0.2;
+    const ox = gx*S.STUD;
+    const oz = gz*S.STUD;
     const oy = layerY(gy);
-    const W  = sx*S.STUD - 0.4;
-    const D  = sz*S.STUD - 0.4;
+    const W  = sx*S.STUD;
+    const D  = sz*S.STUD;
     const H  = hp*S.PLATE - S.STUD_H;
     addBox(ox, oy, oz, W, H, D);
     for (let xi=0; xi<sx; xi++) for (let zi=0; zi<sz; zi++) {
