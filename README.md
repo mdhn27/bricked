@@ -3,7 +3,7 @@
 
 **Virtueller LEGO-Editor im Browser — mit echten LEGO-Maßen und STL-Export für den 3D-Druck.**
 
-[![Demo](https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-red?style=flat-square)](https://DEIN-USERNAME.github.io/brickforge)
+[![Demo](https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-red?style=flat-square)](https://mdhn27.github.io/bricked)
 
 ---
 
