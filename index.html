@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BrickForge — Virtueller LEGO-Editor</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --red: #E63946;
+    --yellow: #FFD60A;
+    --blue: #457B9D;
+    --bg: #1a1a2e;
+    --panel: #16213e;
+    --panel2: #0f3460;
+    --border: rgba(255,255,255,0.08);
+    --text: #e8e8f0;
+    --muted: rgba(232,232,240,0.45);
+    --accent: #E63946;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+
+  html, body { height: 100%; overflow: hidden; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  /* ── Header ── */
+  #header {
+    height: 52px;
+    min-height: 52px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 16px;
+    z-index: 10;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 800;
+    font-size: 17px;
+    letter-spacing: -0.3px;
+  }
+  .logo-brick {
+    width: 28px; height: 16px;
+    background: var(--red);
+    border-radius: 3px;
+    position: relative;
+  }
+  .logo-brick::before, .logo-brick::after {
+    content: '';
+    position: absolute;
+    top: -5px;
+    width: 8px; height: 6px;
+    background: var(--red);
+    border-radius: 3px 3px 0 0;
+  }
+  .logo-brick::before { left: 4px; }
+  .logo-brick::after { right: 4px; }
+  .logo span { color: var(--red); }
+
+  .header-sep { width: 1px; height: 28px; background: var(--border); }
+
+  .header-btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 12px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-size: 13px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .header-btn:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); }
+  .header-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .header-btn.primary { background: var(--red); border-color: var(--red); color: white; }
+  .header-btn.primary:hover { background: #c0303c; border-color: #c0303c; }
+
+  #undo-btn svg, #redo-btn svg { width: 14px; height: 14px; }
+
+  .spacer { flex: 1; }
+
+  #brick-count-badge {
+    font-size: 12px; color: var(--muted);
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* ── Layout ── */
+  #workspace {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+  }
+
+  /* ── Left Sidebar ── */
+  #sidebar {
+    width: 220px;
+    min-width: 220px;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .sidebar-section {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  /* Tool buttons */
+  .tool-row { display: flex; gap: 6px; }
+  .tool-btn {
+    flex: 1;
+    padding: 7px 6px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-size: 12px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+  }
+  .tool-btn:hover { background: rgba(255,255,255,0.1); }
+  .tool-btn.active { background: var(--red); border-color: var(--red); color: white; }
+
+  /* Rotation buttons */
+  .rot-row { display: flex; align-items: center; gap: 6px; }
+  .rot-display {
+    flex: 1;
+    text-align: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--yellow);
+    background: rgba(255,214,10,0.08);
+    border: 1px solid rgba(255,214,10,0.2);
+    border-radius: var(--radius);
+    padding: 6px 0;
+  }
+  .rot-btn {
+    width: 32px; height: 32px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+    font-family: 'Nunito', sans-serif;
+  }
+  .rot-btn:hover { background: rgba(255,255,255,0.12); }
+
+  /* Stone types */
+  #stone-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+  }
+  .stone-btn {
+    padding: 7px 6px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-size: 11px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+    line-height: 1.3;
+  }
+  .stone-btn:hover { background: rgba(255,255,255,0.1); }
+  .stone-btn.active { background: rgba(230,57,70,0.25); border-color: var(--red); color: #ff8a93; }
+
+  /* Color palette */
+  #color-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 5px;
+  }
+  .color-swatch {
+    aspect-ratio: 1;
+    border-radius: 5px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.1s, border-color 0.1s;
+  }
+  .color-swatch:hover { transform: scale(1.12); }
+  .color-swatch.active { border-color: white; transform: scale(1.08); }
+
+  /* Layer */
+  .layer-row { display: flex; align-items: center; gap: 8px; }
+  .layer-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--yellow);
+    width: 36px; text-align: center;
+  }
+  .layer-btn {
+    width: 32px; height: 32px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+    font-family: 'Nunito', sans-serif;
+  }
+  .layer-btn:hover { background: rgba(255,255,255,0.12); }
+
+  /* Stats */
+  #stats-area {
+    padding: 12px 14px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 2;
+    font-family: 'Space Mono', monospace;
+  }
+  #stats-area b { color: var(--text); font-weight: 700; }
+
+  /* Sidebar bottom buttons */
+  .sidebar-actions { padding: 10px 14px; display: flex; flex-direction: column; gap: 6px; margin-top: auto; border-top: 1px solid var(--border); }
+  .action-btn {
+    padding: 7px 10px;
+    border-radius: var(--radius);
+    font-size: 12px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.04);
+    color: var(--muted);
+  }
+  .action-btn:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+  .action-btn.danger:hover { background: rgba(230,57,70,0.15); border-color: rgba(230,57,70,0.4); color: #ff8a93; }
+
+  /* ── Canvas area ── */
+  #canvas-wrap {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+  #canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* ── Keyboard hints ── */
+  #hints {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex; gap: 10px;
+    background: rgba(22,33,62,0.85);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 16px;
+    font-size: 11px;
+    color: var(--muted);
+    pointer-events: none;
+    white-space: nowrap;
+    backdrop-filter: blur(6px);
+  }
+  #hints span { color: var(--text); font-weight: 700; }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed;
+    bottom: 20px; right: 20px;
+    background: var(--panel2);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: var(--text);
+    padding: 10px 16px;
+    border-radius: var(--radius-lg);
+    font-size: 13px;
+    font-weight: 600;
+    display: none;
+    z-index: 9999;
+    pointer-events: none;
+    max-width: 280px;
+  }
+
+  /* Scrollbar styling */
+  #sidebar::-webkit-scrollbar { width: 4px; }
+  #sidebar::-webkit-scrollbar-track { background: transparent; }
+  #sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<div id="header">
+  <div class="logo">
+    <div class="logo-brick"></div>
+    Brick<span>Forge</span>
+  </div>
+  <div class="header-sep"></div>
+  <button class="header-btn" id="undo-btn" onclick="undo()" title="Rückgängig (Strg+Z)" disabled>
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M2 6h7a4 4 0 0 1 0 8H5"/><path d="M2 6l3-3M2 6l3 3"/>
+    </svg>
+    Rückgängig
+  </button>
+  <button class="header-btn" id="redo-btn" onclick="redo()" title="Wiederholen (Strg+Y)" disabled>
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 6H7a4 4 0 0 0 0 8h4"/><path d="M14 6l-3-3M14 6l-3 3"/>
+    </svg>
+    Wiederholen
+  </button>
+  <div class="spacer"></div>
+  <div id="brick-count-badge">0 Steine</div>
+  <button class="header-btn" onclick="saveProject()" title="Speichern (Strg+S)">
+    💾 Speichern
+  </button>
+  <button class="header-btn" onclick="loadProject()" title="Laden">
+    📂 Laden
+  </button>
+  <button class="header-btn primary" onclick="exportSTL()" title="Als STL exportieren">
+    ⬇ STL Export
+  </button>
+</div>
+
+<!-- ── Workspace ── -->
+<div id="workspace">
+
+  <!-- ── Sidebar ── -->
+  <div id="sidebar">
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Werkzeug</div>
+      <div class="tool-row">
+        <button class="tool-btn active" id="tool-place" onclick="setTool('place')">✚ Setzen</button>
+        <button class="tool-btn" id="tool-remove" onclick="setTool('remove')">✕ Löschen</button>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Rotation</div>
+      <div class="rot-row">
+        <button class="rot-btn" onclick="rotateLeft()" title="Gegen Uhrzeigersinn (Q)">↺</button>
+        <div class="rot-display" id="rot-display">0°</div>
+        <button class="rot-btn" onclick="rotateRight()" title="Im Uhrzeigersinn (E)">↻</button>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Steinform</div>
+      <div id="stone-grid"></div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Farbe</div>
+      <div id="color-grid"></div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Ebene (Höhe)</div>
+      <div class="layer-row">
+        <button class="layer-btn" onclick="changeLayer(-1)">−</button>
+        <div class="layer-num" id="layer-num">1</div>
+        <button class="layer-btn" onclick="changeLayer(1)">+</button>
+        <span style="font-size: 11px; color: var(--muted); margin-left: 4px;">[ / ]</span>
+      </div>
+    </div>
+
+    <div id="stats-area">
+      Steine: <b id="s-total">0</b><br>
+      Ebenen: <b id="s-layers">0</b><br>
+      Volumen: <b id="s-vol">0</b> cm³
+    </div>
+
+    <div class="sidebar-actions">
+      <button class="action-btn danger" onclick="clearAll()">🗑 Alles löschen</button>
+    </div>
+  </div>
+
+  <!-- ── Canvas ── -->
+  <div id="canvas-wrap">
+    <canvas id="canvas"></canvas>
+    <div id="hints">
+      <span>Klick</span> setzen/löschen &nbsp;
+      <span>Rechtsklick+Ziehen</span> drehen &nbsp;
+      <span>Scroll</span> zoom &nbsp;
+      <span>Q/E</span> rotieren &nbsp;
+      <span>[/]</span> Ebene &nbsp;
+      <span>Strg+Z/Y</span> undo/redo
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<input type="file" id="file-input" accept=".brickforge,.json" style="display:none" onchange="loadProjectFile(event)">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ════════════════════════════════════════════════════════════
+//  LEGO STANDARD DIMENSIONS (all in mm, real scale)
+// ════════════════════════════════════════════════════════════
+const S = {
+  STUD:  8.0,    // 1 stud = 8 mm
+  PLATE: 3.2,    // plate height
+  BRICK: 9.6,    // standard brick height (3 plates)
+  WALL:  1.5,    // wall thickness
+  STUD_R: 2.4,   // stud cylinder radius
+  STUD_H: 1.7,   // stud height
+  TUBE_R: 3.26,  // anti-stud tube radius
+};
+
+// Stone type definitions: {id, label, sx, sz, height (in PLATE units), shape}
+const STONE_TYPES = [
+  { id:'1x1',   label:'1×1\nNoppe',   sx:1, sz:1, hp:3 },
+  { id:'1x2',   label:'1×2\nPlatte',  sx:1, sz:2, hp:3 },
+  { id:'2x2',   label:'2×2\nBlock',   sx:2, sz:2, hp:3 },
+  { id:'2x4',   label:'2×4\nZiegel',  sx:2, sz:4, hp:3 },
+  { id:'4x4',   label:'4×4\nGroß',    sx:4, sz:4, hp:3 },
+  { id:'1x1f',  label:'1×1\nFlach',   sx:1, sz:1, hp:1 },
+  { id:'1x2f',  label:'1×2\nFlach',   sx:1, sz:2, hp:1 },
+  { id:'2x2f',  label:'2×2\nFlach',   sx:2, sz:2, hp:1 },
+  { id:'2x4f',  label:'2×4\nFlach',   sx:2, sz:4, hp:1 },
+  { id:'1x4',   label:'1×4\nBalken',  sx:1, sz:4, hp:3 },
+  { id:'1x6',   label:'1×6\nLange',   sx:1, sz:6, hp:3 },
+  { id:'2x6',   label:'2×6\nBrett',   sx:2, sz:6, hp:3 },
+];
+
+const COLORS = [
+  '#E63946','#E07020','#FFD60A','#2DC653','#1A936F',
+  '#457B9D','#1D3557','#9B5DE5','#F72585','#FFFFFF',
+  '#C8C8C8','#888888','#444444','#1a1a1a','#7B4F2E',
+  '#A8DADC','#CDBF88','#F4A261','#E9C46A','#264653',
+];
+
+// ════════════════════════════════════════════════════════════
+//  State
+// ════════════════════════════════════════════════════════════
+let scene, camera, renderer, raycaster;
+let brickMeshes = {};   // key → THREE.Group
+let brickData   = {};   // key → {gx,gy,gz,sx,sz,hp,rot,color,type}
+let history = [];       // undo stack [{action,data}]
+let future  = [];       // redo stack
+
+let currentColor  = COLORS[0];
+let currentTool   = 'place';
+let currentLayer  = 1;
+let currentStone  = STONE_TYPES[3]; // 2x4
+let currentRot    = 0;  // 0,90,180,270
+
+let isRightDrag = false, isDragging = false;
+let prevMouse   = {x:0, y:0};
+let camTheta = 0.5, camPhi = 0.75, camDist = 900;
+let camTarget   = new THREE.Vector3(0, 0, 0);
+
+let ghostGroup  = null;
+let gridHelpers = [];
+
+// ════════════════════════════════════════════════════════════
+//  Init
+// ════════════════════════════════════════════════════════════
+function init() {
+  const canvas = document.getElementById('canvas');
+  const wrap   = document.getElementById('canvas-wrap');
+  const W = wrap.clientWidth, H = wrap.clientHeight;
+
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x1a1a2e);
+  scene.fog = new THREE.Fog(0x1a1a2e, 1800, 3500);
+
+  camera = new THREE.PerspectiveCamera(42, W/H, 1, 5000);
+  updateCamera();
+
+  renderer = new THREE.WebGLRenderer({canvas, antialias: true});
+  renderer.setSize(W, H);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  // Lighting
+  scene.add(new THREE.AmbientLight(0x8090b0, 0.7));
+  const sun = new THREE.DirectionalLight(0xfff5e0, 1.1);
+  sun.position.set(400, 700, 300);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.camera.near = 1;
+  sun.shadow.camera.far = 3000;
+  sun.shadow.camera.left = sun.shadow.camera.bottom = -600;
+  sun.shadow.camera.right = sun.shadow.camera.top = 600;
+  scene.add(sun);
+  scene.add(new THREE.DirectionalLight(0x4060ff, 0.25).position.set(-300, 200, -400));
+
+  raycaster = new THREE.Raycaster();
+  buildGridForLayer(1);
+  buildPalette();
+  buildStoneButtons();
+  buildGhost();
+  updateStats();
+  updateUndoRedo();
+
+  canvas.addEventListener('mousedown',  onMouseDown);
+  canvas.addEventListener('mousemove',  onMouseMove);
+  canvas.addEventListener('mouseup',    () => { isDragging = false; isRightDrag = false; });
+  canvas.addEventListener('contextmenu', e => e.preventDefault());
+  canvas.addEventListener('wheel',      onWheel, {passive:true});
+  document.addEventListener('keydown',  onKey);
+  window.addEventListener('resize', () => {
+    const W = wrap.clientWidth, H = wrap.clientHeight;
+    camera.aspect = W/H;
+    camera.updateProjectionMatrix();
+    renderer.setSize(W, H);
+  });
+
+  animate();
+}
+
+// ════════════════════════════════════════════════════════════
+//  Camera
+// ════════════════════════════════════════════════════════════
+function updateCamera() {
+  const r  = camDist;
+  const ph = Math.max(0.08, Math.min(Math.PI/2 - 0.05, camPhi));
+  camera.position.set(
+    camTarget.x + r * Math.sin(ph) * Math.sin(camTheta),
+    camTarget.y + r * Math.cos(ph),
+    camTarget.z + r * Math.sin(ph) * Math.cos(camTheta)
+  );
+  camera.lookAt(camTarget);
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
+}
+
+// ════════════════════════════════════════════════════════════
+//  Grid helpers
+// ════════════════════════════════════════════════════════════
+function layerY(layer) {
+  return (layer - 1) * S.BRICK;
+}
+
+function buildGridForLayer(layer) {
+  gridHelpers.forEach(g => scene.remove(g));
+  gridHelpers = [];
+  const size = 32; // 32 studs
+  const g = new THREE.GridHelper(size * S.STUD, size, 0x334466, 0x253355);
+  g.position.y = layerY(layer) - 0.5;
+  scene.add(g);
+  gridHelpers.push(g);
+
+  // floor plane for raycasting
+  let floor = scene.getObjectByName('rayfloor');
+  if (floor) scene.remove(floor);
+  const pg = new THREE.PlaneGeometry(size*S.STUD*2, size*S.STUD*2);
+  const pm = new THREE.MeshBasicMaterial({visible:false, side:THREE.DoubleSide});
+  floor = new THREE.Mesh(pg, pm);
+  floor.rotation.x = -Math.PI/2;
+  floor.position.y  = layerY(layer);
+  floor.name = 'rayfloor';
+  scene.add(floor);
+}
+
+// ════════════════════════════════════════════════════════════
+//  Brick key & geometry helpers
+// ════════════════════════════════════════════════════════════
+function brickKey(gx, gy, gz) { return `${gx},${gy},${gz}`; }
+
+// Effective dimensions with rotation
+function effectiveDims(stone, rot) {
+  const is90 = rot === 90 || rot === 270;
+  return is90
+    ? { sx: stone.sz, sz: stone.sx, hp: stone.hp }
+    : { sx: stone.sx, sz: stone.sz, hp: stone.hp };
+}
+
+// World position of grid cell bottom-left
+function gridToWorld(gx, gy, gz) {
+  return new THREE.Vector3(gx * S.STUD, layerY(gy), gz * S.STUD);
+}
+
+// Center of a brick in world coordinates
+function brickCenter(gx, gy, gz, sx, sz, hp) {
+  return new THREE.Vector3(
+    gx * S.STUD + sx * S.STUD / 2,
+    layerY(gy) + hp * S.PLATE / 2,
+    gz * S.STUD + sz * S.STUD / 2
+  );
+}
+
+// ════════════════════════════════════════════════════════════
+//  Collision detection
+// ════════════════════════════════════════════════════════════
+function occupiedCells(gx, gy, gz, sx, sz, hp) {
+  // A brick spans gx..gx+sx-1, gy..gy+ceil(hp/3)-1 (layer), gz..gz+sz-1
+  const layerSpan = Math.ceil(hp / 3);
+  const cells = [];
+  for (let x = gx; x < gx + sx; x++)
+    for (let z = gz; z < gz + sz; z++)
+      for (let y = gy; y < gy + layerSpan; y++)
+        cells.push(brickKey(x, y, z));
+  return cells;
+}
+
+const occupancyMap = {}; // cell key → brick key
+
+function canPlace(gx, gy, gz, sx, sz, hp) {
+  const cells = occupiedCells(gx, gy, gz, sx, sz, hp);
+  for (const c of cells) if (occupancyMap[c]) return false;
+  return true;
+}
+
+function registerOccupancy(bk, gx, gy, gz, sx, sz, hp) {
+  occupiedCells(gx, gy, gz, sx, sz, hp).forEach(c => { occupancyMap[c] = bk; });
+}
+
+function unregisterOccupancy(gx, gy, gz, sx, sz, hp) {
+  occupiedCells(gx, gy, gz, sx, sz, hp).forEach(c => { delete occupancyMap[c]; });
+}
+
+// ════════════════════════════════════════════════════════════
+//  Mesh creation
+// ════════════════════════════════════════════════════════════
+function createBrickGroup(sx, sz, hp, color, opacity=1) {
+  const group = new THREE.Group();
+  const W  = sx * S.STUD;
+  const D  = sz * S.STUD;
+  const H  = hp * S.PLATE;
+  const wt = S.WALL;
+  const col = new THREE.Color(color);
+
+  const mat = (roughness=0.45) => new THREE.MeshStandardMaterial({
+    color: col,
+    roughness,
+    metalness: 0.05,
+    transparent: opacity < 1,
+    opacity,
+    side: THREE.FrontSide
+  });
+
+  // Main body
+  const bodyH = H - S.STUD_H;
+  const body  = new THREE.Mesh(
+    new THREE.BoxGeometry(W - 0.4, bodyH, D - 0.4),
+    mat(0.45)
+  );
+  body.position.set(W/2, bodyH/2, D/2);
+  body.castShadow = true;
+  body.receiveShadow = true;
+  group.add(body);
+
+  // Top face (slightly lighter)
+  const topMat = new THREE.MeshStandardMaterial({
+    color: col.clone().lerp(new THREE.Color(0xffffff), 0.07),
+    roughness: 0.35, metalness: 0.05,
+    transparent: opacity<1, opacity
+  });
+  const top = new THREE.Mesh(
+    new THREE.PlaneGeometry(W - 0.4, D - 0.4),
+    topMat
+  );
+  top.rotation.x = -Math.PI/2;
+  top.position.set(W/2, bodyH, D/2);
+  group.add(top);
+
+  // Studs
+  const studMat = new THREE.MeshStandardMaterial({
+    color: col.clone().lerp(new THREE.Color(0xffffff), 0.05),
+    roughness: 0.35, metalness: 0.05,
+    transparent: opacity<1, opacity
+  });
+  const studGeo = new THREE.CylinderGeometry(S.STUD_R, S.STUD_R, S.STUD_H, 12);
+  for (let xi = 0; xi < sx; xi++) {
+    for (let zi = 0; zi < sz; zi++) {
+      const stud = new THREE.Mesh(studGeo, studMat);
+      stud.position.set(
+        (xi + 0.5) * S.STUD,
+        bodyH + S.STUD_H/2,
+        (zi + 0.5) * S.STUD
+      );
+      stud.castShadow = true;
+      group.add(stud);
+    }
+  }
+
+  // Bottom tubes (for bricks > 1x1)
+  if ((sx > 1 || sz > 1) && opacity === 1 && hp === 3) {
+    const tubeMat = new THREE.MeshStandardMaterial({color: col, roughness:0.5, metalness:0.05});
+    const tubeH   = bodyH - 1;
+    const tubeGeo = new THREE.CylinderGeometry(S.TUBE_R, S.TUBE_R, tubeH, 12, 1, true);
+    for (let xi = 1; xi < sx; xi++) {
+      for (let zi = 1; zi < sz; zi++) {
+        const tube = new THREE.Mesh(tubeGeo, tubeMat);
+        tube.position.set(xi * S.STUD, tubeH/2 + 0.5, zi * S.STUD);
+        group.add(tube);
+      }
+    }
+  }
+  return group;
+}
+
+// ════════════════════════════════════════════════════════════
+//  Ghost (preview)
+// ════════════════════════════════════════════════════════════
+function buildGhost() {
+  if (ghostGroup) scene.remove(ghostGroup);
+  const {sx, sz, hp} = effectiveDims(currentStone, currentRot);
+  ghostGroup = createBrickGroup(sx, sz, hp, currentColor, 0.38);
+  ghostGroup.visible = false;
+  scene.add(ghostGroup);
+}
+
+function updateGhostPos(gx, gz) {
+  if (!ghostGroup) return;
+  const {sx, sz, hp} = effectiveDims(currentStone, currentRot);
+  ghostGroup.position.set(gx * S.STUD, layerY(currentLayer), gz * S.STUD);
+  const ok = canPlace(gx, currentLayer, gz, sx, sz, hp);
+  ghostGroup.traverse(m => {
+    if (m.isMesh && m.material) {
+      m.material.color.set(ok ? currentColor : '#ff4444');
+      m.material.opacity = ok ? 0.38 : 0.28;
+    }
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+//  Place / Remove
+// ════════════════════════════════════════════════════════════
+function placeBrick(gx, gz, pushHistory=true) {
+  const {sx, sz, hp} = effectiveDims(currentStone, currentRot);
+  const gy  = currentLayer;
+
+  if (!canPlace(gx, gy, gz, sx, sz, hp)) { showToast('Position belegt!'); return false; }
+
+  const bk   = brickKey(gx, gy, gz);
+  const data = { gx, gy, gz, sx, sz, hp, rot: currentRot, color: currentColor, type: currentStone.id };
+  const mesh = createBrickGroup(sx, sz, hp, currentColor);
+  mesh.position.set(gx * S.STUD, layerY(gy), gz * S.STUD);
+  scene.add(mesh);
+  brickMeshes[bk] = mesh;
+  brickData[bk]   = data;
+  registerOccupancy(bk, gx, gy, gz, sx, sz, hp);
+
+  if (pushHistory) {
+    history.push({action:'place', bk, data});
+    future = [];
+    updateUndoRedo();
+  }
+  updateStats();
+  return true;
+}
+
+function removeBrickAt(gx, gz, layer, pushHistory=true) {
+  // Try exact key first, else scan occupancy
+  let bk = brickKey(gx, layer, gz);
+  if (!brickData[bk]) {
+    // check occupancy map
+    const ck = brickKey(gx, layer, gz);
+    bk = occupancyMap[ck];
+    if (!bk) return false;
+  }
+  return removeBrickByKey(bk, pushHistory);
+}
+
+function removeBrickByKey(bk, pushHistory=true) {
+  const data = brickData[bk];
+  if (!data) return false;
+  scene.remove(brickMeshes[bk]);
+  unregisterOccupancy(data.gx, data.gy, data.gz, data.sx, data.sz, data.hp);
+  delete brickMeshes[bk];
+  delete brickData[bk];
+  if (pushHistory) {
+    history.push({action:'remove', bk, data});
+    future = [];
+    updateUndoRedo();
+  }
+  updateStats();
+  return true;
+}
+
+// ════════════════════════════════════════════════════════════
+//  Undo / Redo
+// ════════════════════════════════════════════════════════════
+function undo() {
+  if (!history.length) return;
+  const entry = history.pop();
+  if (entry.action === 'place') {
+    // undo a place → remove it
+    removeBrickByKey(entry.bk, false);
+    future.push({action:'remove', bk: entry.bk, data: entry.data});
+  } else {
+    // undo a remove → re-place it
+    const d = entry.data;
+    const savedColor = currentColor, savedLayer = currentLayer, savedRot = currentRot, savedStone = currentStone;
+    currentColor = d.color; currentLayer = d.gy; currentRot = d.rot;
+    currentStone = STONE_TYPES.find(s => s.id === d.type) || currentStone;
+    placeBrick(d.gx, d.gz, false);
+    currentColor = savedColor; currentLayer = savedLayer; currentRot = savedRot; currentStone = savedStone;
+    future.push({action:'place', bk: entry.bk, data: entry.data});
+  }
+  updateUndoRedo();
+}
+
+function redo() {
+  if (!future.length) return;
+  const entry = future.pop();
+  if (entry.action === 'remove') {
+    removeBrickByKey(entry.bk, false);
+    history.push({action:'remove', bk: entry.bk, data: entry.data});
+  } else {
+    const d = entry.data;
+    const savedColor = currentColor, savedLayer = currentLayer, savedRot = currentRot, savedStone = currentStone;
+    currentColor = d.color; currentLayer = d.gy; currentRot = d.rot;
+    currentStone = STONE_TYPES.find(s => s.id === d.type) || currentStone;
+    placeBrick(d.gx, d.gz, false);
+    currentColor = savedColor; currentLayer = savedLayer; currentRot = savedRot; currentStone = savedStone;
+    history.push({action:'place', bk: entry.bk, data: entry.data});
+  }
+  updateUndoRedo();
+}
+
+function updateUndoRedo() {
+  document.getElementById('undo-btn').disabled = !history.length;
+  document.getElementById('redo-btn').disabled = !future.length;
+}
+
+// ════════════════════════════════════════════════════════════
+//  Raycasting / Mouse
+// ════════════════════════════════════════════════════════════
+function getGridPos(event) {
+  const canvas = document.getElementById('canvas');
+  const rect   = canvas.getBoundingClientRect();
+  const mouse  = new THREE.Vector2(
+    ((event.clientX - rect.left) / rect.width) * 2 - 1,
+    -((event.clientY - rect.top) / rect.height) * 2 + 1
+  );
+  raycaster.setFromCamera(mouse, camera);
+  const floor = scene.getObjectByName('rayfloor');
+  if (!floor) return null;
+  const hits = raycaster.intersectObject(floor);
+  if (!hits.length) return null;
+  const p = hits[0].point;
+  return { gx: Math.floor(p.x / S.STUD), gz: Math.floor(p.z / S.STUD) };
+}
+
+function onMouseDown(e) {
+  if (e.button === 2) {
+    isRightDrag = true;
+    prevMouse = { x: e.clientX, y: e.clientY };
+    return;
+  }
+  if (e.button === 0) {
+    isDragging = true;
+    const pos = getGridPos(e);
+    if (!pos) return;
+    if (currentTool === 'place') placeBrick(pos.gx, pos.gz);
+    else removeBrickAt(pos.gx, pos.gz, currentLayer);
+  }
+}
+
+function onMouseMove(e) {
+  if (isRightDrag) {
+    const dx = e.clientX - prevMouse.x;
+    const dy = e.clientY - prevMouse.y;
+    camTheta -= dx * 0.008;
+    camPhi    = Math.max(0.08, Math.min(Math.PI/2 - 0.05, camPhi - dy * 0.008));
+    prevMouse = { x: e.clientX, y: e.clientY };
+    updateCamera();
+    return;
+  }
+  const pos = getGridPos(e);
+  if (pos && ghostGroup) {
+    ghostGroup.visible = currentTool === 'place';
+    updateGhostPos(pos.gx, pos.gz);
+  }
+  if (isDragging && e.buttons === 1 && pos) {
+    if (currentTool === 'place') placeBrick(pos.gx, pos.gz);
+    else removeBrickAt(pos.gx, pos.gz, currentLayer);
+  }
+}
+
+function onWheel(e) {
+  camDist = Math.max(80, Math.min(2500, camDist + e.deltaY));
+  updateCamera();
+}
+
+function onKey(e) {
+  if (e.ctrlKey || e.metaKey) {
+    if (e.key === 'z') { e.preventDefault(); undo(); return; }
+    if (e.key === 'y') { e.preventDefault(); redo(); return; }
+    if (e.key === 's') { e.preventDefault(); saveProject(); return; }
+  }
+  if (e.key === 'q' || e.key === 'Q') rotateLeft();
+  if (e.key === 'e' || e.key === 'E') rotateRight();
+  if (e.key === '[') changeLayer(-1);
+  if (e.key === ']') changeLayer(1);
+}
+
+// ════════════════════════════════════════════════════════════
+//  UI Controls
+// ════════════════════════════════════════════════════════════
+function setTool(t) {
+  currentTool = t;
+  ['place','remove'].forEach(id => {
+    const btn = document.getElementById('tool-' + id);
+    btn.classList.toggle('active', id === t);
+  });
+  if (ghostGroup) ghostGroup.visible = t === 'place';
+}
+
+function rotateLeft()  { currentRot = (currentRot - 90 + 360) % 360; updateRotDisplay(); buildGhost(); }
+function rotateRight() { currentRot = (currentRot + 90) % 360;       updateRotDisplay(); buildGhost(); }
+function updateRotDisplay() { document.getElementById('rot-display').textContent = currentRot + '°'; }
+
+function changeLayer(d) {
+  currentLayer = Math.max(1, Math.min(30, currentLayer + d));
+  document.getElementById('layer-num').textContent = currentLayer;
+  buildGridForLayer(currentLayer);
+  buildGhost();
+  // Update cam target height slightly
+  camTarget.y = layerY(currentLayer) * 0.5;
+  updateCamera();
+}
+
+function buildStoneButtons() {
+  const grid = document.getElementById('stone-grid');
+  STONE_TYPES.forEach((s, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'stone-btn' + (s === currentStone ? ' active' : '');
+    btn.id = 'stone-' + s.id;
+    btn.textContent = s.label;
+    btn.onclick = () => {
+      currentStone = s;
+      document.querySelectorAll('.stone-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      buildGhost();
+    };
+    grid.appendChild(btn);
+  });
+}
+
+function buildPalette() {
+  const grid = document.getElementById('color-grid');
+  COLORS.forEach((c, i) => {
+    const sw = document.createElement('div');
+    sw.className = 'color-swatch' + (i === 0 ? ' active' : '');
+    sw.style.background = c;
+    sw.title = c;
+    sw.onclick = () => {
+      currentColor = c;
+      document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+      sw.classList.add('active');
+      buildGhost();
+    };
+    grid.appendChild(sw);
+  });
+}
+
+function updateStats() {
+  const total  = Object.keys(brickData).length;
+  const layers = total ? Math.max(...Object.values(brickData).map(d => d.gy)) : 0;
+  const vol    = Object.values(brickData).reduce((acc, d) => {
+    return acc + d.sx * S.STUD * d.sz * S.STUD * d.hp * S.PLATE / 1000;
+  }, 0);
+  document.getElementById('s-total').textContent  = total;
+  document.getElementById('s-layers').textContent = layers;
+  document.getElementById('s-vol').textContent    = vol.toFixed(1);
+  document.getElementById('brick-count-badge').textContent = total + (total === 1 ? ' Stein' : ' Steine');
+}
+
+// ════════════════════════════════════════════════════════════
+//  Save / Load
+// ════════════════════════════════════════════════════════════
+function saveProject() {
+  const payload = JSON.stringify({ version: 1, bricks: Object.values(brickData) }, null, 2);
+  const blob = new Blob([payload], {type:'application/json'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'brickforge_model.brickforge';
+  a.click(); URL.revokeObjectURL(url);
+  showToast('Projekt gespeichert!');
+}
+
+function loadProject() { document.getElementById('file-input').click(); }
+
+function loadProjectFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      clearAll(false);
+      data.bricks.forEach(d => {
+        const savedColor = currentColor, savedLayer = currentLayer, savedRot = currentRot, savedStone = currentStone;
+        currentColor = d.color; currentLayer = d.gy; currentRot = d.rot;
+        currentStone = STONE_TYPES.find(s => s.id === d.type) || STONE_TYPES[0];
+        placeBrick(d.gx, d.gz, false);
+        currentColor = savedColor; currentLayer = savedLayer; currentRot = savedRot; currentStone = savedStone;
+      });
+      history = []; future = [];
+      updateUndoRedo();
+      showToast(`Geladen: ${data.bricks.length} Steine`);
+    } catch(err) { showToast('Fehler beim Laden!'); }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function clearAll(pushHistory=true) {
+  if (pushHistory && Object.keys(brickData).length > 0) {
+    history.push({action:'clearAll', snapshot: JSON.parse(JSON.stringify(brickData))});
+    future = [];
+  }
+  Object.keys(brickMeshes).forEach(bk => scene.remove(brickMeshes[bk]));
+  Object.keys(occupancyMap).forEach(c => delete occupancyMap[c]);
+  for (const k in brickMeshes) delete brickMeshes[k];
+  for (const k in brickData)   delete brickData[k];
+  updateStats();
+  updateUndoRedo();
+}
+
+// ════════════════════════════════════════════════════════════
+//  STL Export  (binary, real LEGO dimensions)
+// ════════════════════════════════════════════════════════════
+function exportSTL() {
+  const entries = Object.values(brickData);
+  if (!entries.length) { showToast('Keine Steine vorhanden!'); return; }
+
+  const tris = [];
+
+  function pushTri(n, a, b, c) { tris.push({n, v:[a,b,c]}); }
+
+  function addBox(ox, oy, oz, W, H, D) {
+    const x0=ox, x1=ox+W, y0=oy, y1=oy+H, z0=oz, z1=oz+D;
+    // −Z
+    pushTri([0,0,-1],[x0,y0,z0],[x1,y1,z0],[x1,y0,z0]);
+    pushTri([0,0,-1],[x0,y0,z0],[x0,y1,z0],[x1,y1,z0]);
+    // +Z
+    pushTri([0,0,1],[x0,y0,z1],[x1,y0,z1],[x1,y1,z1]);
+    pushTri([0,0,1],[x0,y0,z1],[x1,y1,z1],[x0,y1,z1]);
+    // −X
+    pushTri([-1,0,0],[x0,y0,z0],[x0,y0,z1],[x0,y1,z1]);
+    pushTri([-1,0,0],[x0,y0,z0],[x0,y1,z1],[x0,y1,z0]);
+    // +X
+    pushTri([1,0,0],[x1,y0,z0],[x1,y1,z1],[x1,y0,z1]);
+    pushTri([1,0,0],[x1,y0,z0],[x1,y1,z0],[x1,y1,z1]);
+    // −Y
+    pushTri([0,-1,0],[x0,y0,z0],[x1,y0,z1],[x0,y0,z1]);
+    pushTri([0,-1,0],[x0,y0,z0],[x1,y0,z0],[x1,y0,z1]);
+    // +Y
+    pushTri([0,1,0],[x0,y1,z0],[x0,y1,z1],[x1,y1,z1]);
+    pushTri([0,1,0],[x0,y1,z0],[x1,y1,z1],[x1,y1,z0]);
+  }
+
+  function addCylinder(cx, cy0, cy1, r, segs=16) {
+    const pts = Array.from({length:segs}, (_,i) => {
+      const a = i/segs * Math.PI * 2;
+      return [cx[0]+Math.cos(a)*r, cx[1]+Math.sin(a)*r];
+    });
+    for (let i=0; i<segs; i++) {
+      const a=pts[i], b=pts[(i+1)%segs];
+      // top cap
+      pushTri([0,1,0],[cx[0],cy1,cx[1]],[a[0],cy1,a[1]],[b[0],cy1,b[1]]);
+      // bottom cap
+      pushTri([0,-1,0],[cx[0],cy0,cx[1]],[b[0],cy0,b[1]],[a[0],cy0,a[1]]);
+      // side
+      const nx=Math.cos((i+.5)/segs*Math.PI*2), nz=Math.sin((i+.5)/segs*Math.PI*2);
+      pushTri([nx,0,nz],[a[0],cy0,a[1]],[b[0],cy1,b[1]],[a[0],cy1,a[1]]);
+      pushTri([nx,0,nz],[a[0],cy0,a[1]],[b[0],cy0,b[1]],[b[0],cy1,b[1]]);
+    }
+  }
+
+  entries.forEach(d => {
+    const {gx, gy, gz, sx, sz, hp} = d;
+    const ox = gx*S.STUD + 0.2;
+    const oz = gz*S.STUD + 0.2;
+    const oy = layerY(gy);
+    const W  = sx*S.STUD - 0.4;
+    const D  = sz*S.STUD - 0.4;
+    const H  = hp*S.PLATE - S.STUD_H;
+    addBox(ox, oy, oz, W, H, D);
+    for (let xi=0; xi<sx; xi++) for (let zi=0; zi<sz; zi++) {
+      const cx = gx*S.STUD + (xi+0.5)*S.STUD;
+      const cz = gz*S.STUD + (zi+0.5)*S.STUD;
+      addCylinder([cx,cz], oy+H, oy+H+S.STUD_H, S.STUD_R);
+    }
+  });
+
+  const buf  = new ArrayBuffer(84 + 50*tris.length);
+  const view = new DataView(buf);
+  const hdr  = 'BrickForge v2 — LEGO-dimensioned STL';
+  for (let i=0;i<80;i++) view.setUint8(i, i<hdr.length ? hdr.charCodeAt(i) : 0);
+  view.setUint32(80, tris.length, true);
+  tris.forEach((t,i) => {
+    const off = 84 + i*50;
+    [t.n, ...t.v].forEach((vec, vi) => {
+      view.setFloat32(off + vi*12,     vec[0], true);
+      view.setFloat32(off + vi*12 + 4, vec[1], true);
+      view.setFloat32(off + vi*12 + 8, vec[2], true);
+    });
+    view.setUint16(off+48, 0, true);
+  });
+
+  const blob = new Blob([buf], {type:'application/octet-stream'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'brickforge_model.stl';
+  a.click(); URL.revokeObjectURL(url);
+  showToast(`STL exportiert — ${entries.length} Steine · ${tris.length.toLocaleString()} Dreiecke`);
+}
+
+// ════════════════════════════════════════════════════════════
+//  Toast
+// ════════════════════════════════════════════════════════════
+let toastTimer;
+function showToast(msg, ms=2800) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.style.display='none', ms);
+}
+
+// Start!
+init();
+</script>
+</body>
+</html>
